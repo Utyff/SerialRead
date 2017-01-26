@@ -15,10 +15,10 @@ int main() {
 
 DWORD MsgError(DWORD err, const char *szInfo)
 {
-    char *ErrMsg;
+    TCHAR *ErrMsg;
 
-    if( !FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-                        err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&ErrMsg, 0, NULL) )
+    if( !FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                       err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&ErrMsg, 0, NULL) )
         return err;
 
     if( szInfo ) {
