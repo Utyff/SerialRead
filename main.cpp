@@ -31,11 +31,10 @@ void GetTimerParam()	// Get timer specs
     CurrentTickSize = SysTime.wMilliseconds-dw2;       // TICK size by system clock
     if( CurrentTickSize<0 )  CurrentTickSize += 1000;  // correction if seconds tick
 
+    std::cout << "High performance timer frequency: " << HPT.LowPart << std::endl;
+    std::cout << "Timer supported resolution, in milliseconds, min: " << tc.wPeriodMin << ", max: " << tc.wPeriodMax << std::endl;
     std::cout << "Tick size by HPT: " << dbl << std::endl;
     std::cout << "Tick size by system clock: " << CurrentTickSize << std::endl;
-    std::cout << "performance-counter frequency: " << HPT.LowPart << std::endl;
-    std::cout << "Timer supported resolution, in milliseconds, max: " << tc.wPeriodMax << ",  min: " << tc.wPeriodMin << std::endl;
-    std::cout << "DWORD size " << sizeof(DWORD) << std::endl;
 
 //	timeBeginPeriod(1); // set minimal time
 }
