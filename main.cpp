@@ -1,5 +1,37 @@
-#include <iostream>
 #include <afxres.h>
+#include <tchar.h>
+#include <iostream>
+#include "serialread.h"
+
+
+TCHAR	tzCOMport[20] =_T("\\\\.\\COM");
+
+int main() {
+    std::cout << " -- Serial read v1.0" << std::endl << std::endl;
+    GetTimerParam();
+    return 0;
+}
+
+
+DWORD MsgError(DWORD err, const char *szInfo)
+{
+    char *ErrMsg;
+
+    if( !FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
+                        err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&ErrMsg, 0, NULL) )
+        return err;
+
+    if( szInfo ) {
+        std::cout << "\n\n ==" << szInfo << std::endl;
+    }
+    std::cout << "\n\n == Error code - " << err << std::endl;
+    std::cout << "\n\n == Error message: " << ErrMsg << std::endl;
+
+    LocalFree(ErrMsg);
+
+    return err;
+}
+
 
 void GetTimerParam()	// Get timer specs
 {
@@ -37,11 +69,4 @@ void GetTimerParam()	// Get timer specs
     std::cout << "Tick size by system clock: " << CurrentTickSize << std::endl;
 
 //	timeBeginPeriod(1); // set minimal time
-}
-
-
-int main() {
-    std::cout << " -- Serial read v1.0" << std::endl << std::endl;
-    GetTimerParam();
-    return 0;
 }
