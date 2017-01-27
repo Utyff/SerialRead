@@ -1,25 +1,51 @@
 #include <afxres.h>
 #include <tchar.h>
 #include <iostream>
+#include <cstdio>
 #include "serialread.h"
 
 
 TCHAR   tzCOMport[20] =_T("\\\\.\\COM5");
 DWORD   HPT_freq = 0;				// HP timer frequency in counts per second
+int     stop=0;
 
 void CheckSysTimer();
+BOOL WINAPI consoleHandler(DWORD signal);
 
-
-int main() {
-    std::cout << " -- Serial read v1.0" << std::endl << std::endl;
+int main()
+{
+    std::cout << " -- Serial read v1.0\n\n";
     GetTimerParam();
     CheckSysTimer();
 
     if( !initSerial() ) return 1;
 
+    if (!SetConsoleCtrlHandler(consoleHandler, TRUE))
+    {
+        std::cout << "\nERROR: Could not set control handler\n";
+        return 1;
+    }
+
+    readSerial();
+/*    while (0)
+    {
+        if( stop==1 )  break;
+        Sleep(100);
+    } //*/
+
+    std::cout << "\nExit";
     return 0;
 }
 
+BOOL WINAPI consoleHandler(DWORD signal)
+{
+    if (signal == CTRL_C_EVENT) {
+        std::cout << "\n\nCtrl-C handled.\n";
+        stop=1;
+        return TRUE;
+    }
+    return FALSE;
+}
 
 DWORD MsgError(DWORD err, const char *szInfo)
 {
@@ -33,7 +59,7 @@ DWORD MsgError(DWORD err, const char *szInfo)
     if( szInfo ) {
         std::cout << " == " << szInfo << std::endl;
     }
-    std::cout << " == Error code - " << err << std::endl;
+    std::cout << " == Error code - "   << err    << std::endl;
     std::cout << " == Error message: " << ErrMsg << std::endl;
 
     LocalFree(ErrMsg);
@@ -62,9 +88,9 @@ DWORD GetSysTicks()  // return system miliseconds from machine start  or  from 1
     }
     else
     {
-        GetSystemTime(&SysTime);
-        return	SysTime.wMilliseconds + 1000 * (SysTime.wSecond + 60 *
-               (SysTime.wMinute + 60 * (SysTime.wHour + 24*SysTime.wDay)));   // miliseconds from 1-st day of month
+        GetSystemTime(&SysTime); // GetTickCount ???
+        return	(DWORD)SysTime.wMilliseconds + 1000 * (SysTime.wSecond + 60 *
+                      (SysTime.wMinute + 60 * (SysTime.wHour + 24*SysTime.wDay)));   // miliseconds from 1-st day of month
     }
 }
 

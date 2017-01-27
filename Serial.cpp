@@ -1,19 +1,13 @@
 #include <afxres.h>
-#include <Winbase.h>
+#include <iostream>
 #include "serialread.h"
 
-/*
-#include <math.h>
-#include <winbase.h>
-#include <stdlib.h>
-#include <mmsystem.h>
-#include <windows.h>
-*/
+
 
 DWORD   nSamplesPerSec=48800;
 HANDLE  hPort;
 DWORD   dwSPSBeginTime, dwSPSReceivedBytes, dwSPS;  // for sample rate calculation
-int     bStopThread;
+
 
 int initSerial() {
     BOOL	bl;
@@ -131,28 +125,35 @@ DWORD WINAPI readSerial()
     unsigned long etat;
 
 // -------- Main capting circle
-    while( !bStopThread )  // Capture circle until exit signal.
+    while( !stop )  // Capture circle until exit signal.
     {
         if( !ClearCommError(hPort, &etat, &status) )   // Get the number of bytes in the read queue
-        {	MsgError(etat, "COM port error");	return 13;	}
+        {
+            MsgError(etat, "COM port error");
+            return 13;
+        }
 
-        if( status.cbInQue ) {
+        if( status.cbInQue )  // is there bytes ready for read?
+        {
             if( !ReadFile( hPort, btBuf, status.cbInQue, &dwBytes, NULL ) )  // Need to set limit bytes for read
-            {  MsgError(GetLastError(), "Can`t read from COM-port");	return 13;	}
+            {
+                MsgError(GetLastError(), "Can`t read from COM-port");
+                return 13;
+            }
         }
         else dwBytes=0;
 
-//		if( dwBytes!=status.cbInQue )
-//			ququ
-
-        if( dwBytes ) // calculate sample per second 428366 428793 428580
+        if( dwBytes ) // calculate sample per second
         {
             dwTime = GetSysTicks();
             dwSPSReceivedBytes += dwBytes;
             if( (dwTime-dwSPSBeginTime) >= 1000 )
             {
                 if( dwSPSBeginTime )
-                    dwSPS = (DWORD)( (double)dwSPSReceivedBytes / (dwTime-dwSPSBeginTime) * 1000.0);
+                {
+                    dwSPS = (DWORD) ((double) dwSPSReceivedBytes / (dwTime - dwSPSBeginTime) * 1000.0);
+                    std::cout << dwSPS << " " << dwTime-dwSPSBeginTime << std::endl;
+                }
                 dwSPSReceivedBytes = 0;
                 dwSPSBeginTime = dwTime;
             }
