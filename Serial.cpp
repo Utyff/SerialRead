@@ -1,4 +1,5 @@
 #include <afxres.h>
+#include <Winbase.h>
 #include "serialread.h"
 
 /*
@@ -11,6 +12,8 @@
 
 DWORD   nSamplesPerSec=48800;
 HANDLE  hPort;
+DWORD   dwSPSBeginTime, dwSPSReceivedBytes, dwSPS;  // for sample rate calculation
+int     bStopThread;
 
 int initSerial() {
     BOOL	bl;
@@ -87,7 +90,7 @@ int initSerial() {
 //dwSettableBaud	268856176
 #define baudrate	  2000999
 
-    ComDCM.BaudRate = DWORD(baudrate);
+    ComDCM.BaudRate = baudrate;
     ComDCM.ByteSize = 8;
     ComDCM.Parity = NOPARITY;
     ComDCM.StopBits = ONESTOPBIT;
@@ -116,4 +119,47 @@ int initSerial() {
     }
 
     return true;
+}
+
+
+DWORD WINAPI readSerial()
+{
+#define CAP_BUFFER_SIZE 64*1024
+    BYTE		btBuf[CAP_BUFFER_SIZE];
+    DWORD		dwBytes, dwTime;
+    struct _COMSTAT status;
+    unsigned long etat;
+
+// -------- Main capting circle
+    while( !bStopThread )  // Capture circle until exit signal.
+    {
+        if( !ClearCommError(hPort, &etat, &status) )   // Get the number of bytes in the read queue
+        {	MsgError(etat, "COM port error");	return 13;	}
+
+        if( status.cbInQue ) {
+            if( !ReadFile( hPort, btBuf, status.cbInQue, &dwBytes, NULL ) )  // Need to set limit bytes for read
+            {  MsgError(GetLastError(), "Can`t read from COM-port");	return 13;	}
+        }
+        else dwBytes=0;
+
+//		if( dwBytes!=status.cbInQue )
+//			ququ
+
+        if( dwBytes ) // calculate sample per second 428366 428793 428580
+        {
+            dwTime = GetSysTicks();
+            dwSPSReceivedBytes += dwBytes;
+            if( (dwTime-dwSPSBeginTime) >= 1000 )
+            {
+                if( dwSPSBeginTime )
+                    dwSPS = (DWORD)( (double)dwSPSReceivedBytes / (dwTime-dwSPSBeginTime) * 1000.0);
+                dwSPSReceivedBytes = 0;
+                dwSPSBeginTime = dwTime;
+            }
+        }
+
+        Sleep(1);
+    } // ----------- Main caturing circle
+
+    return 25; // Exit from capture thread
 }

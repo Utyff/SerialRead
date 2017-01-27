@@ -4,11 +4,19 @@
 #include "serialread.h"
 
 
-TCHAR	tzCOMport[20] =_T("\\\\.\\COM");
+TCHAR   tzCOMport[20] =_T("\\\\.\\COM5");
+DWORD   HPT_freq = 0;				// HP timer frequency in counts per second
+
+void CheckSysTimer();
+
 
 int main() {
     std::cout << " -- Serial read v1.0" << std::endl << std::endl;
     GetTimerParam();
+    CheckSysTimer();
+
+    if( !initSerial() ) return 1;
+
     return 0;
 }
 
@@ -18,20 +26,47 @@ DWORD MsgError(DWORD err, const char *szInfo)
     TCHAR *ErrMsg;
 
     if( !FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL,
-                       err, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&ErrMsg, 0, NULL) )
-        return err;
+                       err, MAKELANGID(LANG_ENGLISH, SUBLANG_DEFAULT), (LPTSTR)&ErrMsg, 0, NULL) )
+        ErrMsg = _T("Can`t get error message");
 
+    std::cout << "\n\n";
     if( szInfo ) {
-        std::cout << "\n\n ==" << szInfo << std::endl;
+        std::cout << " == " << szInfo << std::endl;
     }
-    std::cout << "\n\n == Error code - " << err << std::endl;
-    std::cout << "\n\n == Error message: " << ErrMsg << std::endl;
+    std::cout << " == Error code - " << err << std::endl;
+    std::cout << " == Error message: " << ErrMsg << std::endl;
 
     LocalFree(ErrMsg);
 
     return err;
 }
 
+void CheckSysTimer()
+{
+    LARGE_INTEGER HPT;
+
+    timeBeginPeriod(1);
+
+    if( QueryPerformanceFrequency(&HPT) )	HPT_freq = HPT.LowPart;
+}
+
+DWORD GetSysTicks()  // return system miliseconds from machine start  or  from 1-st day of month
+{
+    LARGE_INTEGER	li;
+    SYSTEMTIME		SysTime;
+
+    if( HPT_freq )
+    {
+        QueryPerformanceCounter(&li);
+        return	(DWORD)(li.QuadPart * 1000 / HPT_freq);
+    }
+    else
+    {
+        GetSystemTime(&SysTime);
+        return	SysTime.wMilliseconds + 1000 * (SysTime.wSecond + 60 *
+               (SysTime.wMinute + 60 * (SysTime.wHour + 24*SysTime.wDay)));   // miliseconds from 1-st day of month
+    }
+}
 
 void GetTimerParam()	// Get timer specs
 {
